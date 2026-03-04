@@ -9,7 +9,7 @@ Interactive full-screen search through PowerShell command history.
 
 ## Demo
 
-<video src="demo.mp4" controls width="100%"></video>
+https://github.com/user-attachments/assets/6cb0ff0d-eee3-4604-875c-e4add1891059
 
 ## Features
 
