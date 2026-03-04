@@ -1,8 +1,12 @@
 # Find-History.ps1
 # Outil de recherche interactive dans l'historique PowerShell
 # Utilise l'alternate screen buffer pour un affichage plein ecran propre
+#
+# Utilisation :
+#   - Ctrl+R : lance la recherche et injecte la commande directement sur le prompt
+#   - fh     : lance la recherche et copie la commande dans le presse-papier
 
-function Find-History {
+function Invoke-HistorySearch {
     param([int]$MaxCommands = 1000)
 
     # Importer PSReadLine si necessaire
@@ -18,15 +22,13 @@ function Find-History {
     }
 
     if (-not (Test-Path $historyPath)) {
-        Write-Host "Fichier d'historique introuvable : $historyPath" -ForegroundColor Red
-        return
+        return $null
     }
 
     $allHistory = Get-Content $historyPath -Tail $MaxCommands -Encoding UTF8 | Where-Object { $_.Trim() }
 
     if ($allHistory.Count -eq 0) {
-        Write-Host "Aucune commande dans l'historique" -ForegroundColor Yellow
-        return
+        return $null
     }
 
     $esc = [char]0x1b
@@ -197,13 +199,30 @@ function Find-History {
         [Console]::Write("$esc[?1049l") # Revenir au screen buffer principal
     }
 
-    # Afficher le resultat dans le terminal principal
-    if ($selected) {
-        Set-Clipboard -Value $selected
+    return $selected
+}
+
+# Fonction standalone (fh) : copie dans le presse-papier
+function Find-History {
+    param([int]$MaxCommands = 1000)
+    $result = Invoke-HistorySearch -MaxCommands $MaxCommands
+    if ($result) {
+        Set-Clipboard -Value $result
         Write-Host "Commande copiee : " -ForegroundColor DarkGray -NoNewline
-        Write-Host $selected -ForegroundColor Green
+        Write-Host $result -ForegroundColor Green
         Write-Host "(Ctrl+V pour coller)" -ForegroundColor DarkGray
     }
+}
+
+# Binding Ctrl+H : injecte directement sur le prompt
+if (Get-Module PSReadLine) {
+    Set-PSReadLineKeyHandler -Chord 'Ctrl+h' -ScriptBlock {
+        $result = Invoke-HistorySearch
+        if ($result) {
+            [Microsoft.PowerShell.PSConsoleReadLine]::RevertLine()
+            [Microsoft.PowerShell.PSConsoleReadLine]::Insert($result)
+        }
+    } -Description "Recherche interactive dans l'historique"
 }
 
 Set-Alias -Name fh -Value Find-History -Scope Global -Force
