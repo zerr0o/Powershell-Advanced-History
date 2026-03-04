@@ -1,4 +1,4 @@
-# Find-History
+# Powershell-Advenced-History
 
 Interactive full-screen search through PowerShell command history.
 
